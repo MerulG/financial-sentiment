@@ -1,5 +1,7 @@
 from datasets import load_dataset
 import pandas as pd
+from sklearn.model_selection import train_test_split
+
 
 dataset_financial_phrasebank = load_dataset(
     "takala/financial_phrasebank",
@@ -30,5 +32,18 @@ df_fiqa_all["label"] = df_fiqa_all["score"].apply(score_to_label)
 df_fiqa_all = df_fiqa_all.drop(columns=['score'])
 
 df = pd.concat([df_fiqa_all, df_fpb], ignore_index=True)
-print(df.shape)
-print(df["label"].value_counts())
+
+#delete conflicting duplicates and remove duplicates
+dupe_sentences = df[df["sentence"].duplicated(keep=False)]
+dupe_check = dupe_sentences.groupby("sentence")["label"].nunique()
+conflicting_sentences = dupe_check[dupe_check > 1].index
+
+df = df[~df["sentence"].isin(conflicting_sentences)]
+df = df.drop_duplicates(subset="sentence", keep="first")
+
+train_df, test_val_df = train_test_split(df,test_size=0.3,random_state=42)
+test_df, val_df = train_test_split(test_val_df,test_size=0.5,random_state=42)
+print(train_df.shape, val_df.shape, test_df.shape)
+print(train_df["label"].value_counts(normalize=True))
+print(val_df["label"].value_counts(normalize=True))
+print(test_df["label"].value_counts(normalize=True))
