@@ -1,2 +1,5 @@
 # Project exclude paths
-/venv/
+/venv/mlflow.db
+mlruns/
+confusion_matrix.txt
+*.skops
