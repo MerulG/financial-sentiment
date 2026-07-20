@@ -1,3 +1,5 @@
+import time
+
 import mlflow
 import torch
 from sklearn.metrics import accuracy_score, f1_score, classification_report, confusion_matrix, \
@@ -34,6 +36,7 @@ true_labels = test_df["label"].tolist()
 BATCH_SIZE = 16
 all_preds = []
 
+start = time.time()
 for i in range(0, len(sentences), BATCH_SIZE):
     batch = sentences[i:i + BATCH_SIZE]
     encoded = tokenizer(batch, padding=True, truncation=True, max_length=128, return_tensors="pt").to(device)
@@ -43,7 +46,9 @@ for i in range(0, len(sentences), BATCH_SIZE):
 
     batch_preds = torch.argmax(logits, dim=1).cpu().numpy()
     all_preds.extend(batch_preds)
+elapsed = time.time() - start
 
+print(f"Inference time for {len(sentences)} examples: {elapsed:.4f}s")
 print(len(all_preds), "predictions collected")
 
 # remap all predictions
@@ -70,6 +75,7 @@ with mlflow.start_run(run_name="finbert_zero_shot_reference"):
 
     mlflow.log_metric("test_accuracy", accuracy)
     mlflow.log_metric("test_macro_f1", macro_f1)
+    mlflow.log_metric("inference_time_seconds", elapsed)
 
     precision, recall, f1, support = precision_recall_fscore_support(
         true_labels, remapped_preds, average=None, labels=[0, 1, 2]
